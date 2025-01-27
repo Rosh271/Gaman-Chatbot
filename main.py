@@ -22,7 +22,7 @@ app = Flask(__name__)
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 if not OPENAI_API_KEY:
   raise ValueError("No OpenAI API key found in environment variables")
-client = openai.Client(api_key=OPENAI_API_KEY)
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 # Initialize all available tools
 tool_data = core_functions.load_tools_from_directory('tools')
