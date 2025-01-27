@@ -133,12 +133,19 @@ def save_assistant_data(assistant_data, file_path):
   :param file_path: Path where the JSON file will be saved.
   """
   try:
-    # Create directory if it doesn't exist
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    # Ensure the .storage directory exists
+    storage_dir = os.path.dirname(file_path)
+    os.makedirs(storage_dir, exist_ok=True)
+    logging.info(f"Storage directory ensured: {storage_dir}")
+    
+    # Save the data
     with open(file_path, 'w') as file:
-      json.dump(assistant_data, file)
+      json.dump(assistant_data, file, indent=2)
+      logging.info(f"Assistant data saved successfully to {file_path}")
+      
   except Exception as e:
-    print(f"Error saving assistant data: {e}")
+    logging.error(f"Error saving assistant data to {file_path}: {str(e)}")
+    raise FileNotFoundError(f"Failed to save assistant data: {str(e)}")
 
 
 # Checks if the Assistant JSON has all required fields
