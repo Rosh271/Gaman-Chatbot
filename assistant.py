@@ -100,8 +100,13 @@ def create_assistant(client, tool_data):
         model="gpt-4-1106-preview",
         tools=[{
             "type": "file_search"
-        }] + tool_data["tool_configs"],
-        file_ids=file_ids if file_ids else None)
+        }] + tool_data["tool_configs"])
+    
+    # Attach files separately if needed
+    if file_ids:
+        assistant = client.beta.assistants.update(
+            assistant_id=assistant.id,
+            file_ids=file_ids)
 
     # Print the assistant ID or any other details you need
     print(f"Assistant ID: {assistant.id}")
