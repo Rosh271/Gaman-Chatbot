@@ -1,4 +1,3 @@
-
 import os
 import core_functions
 import json
@@ -6,15 +5,33 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Ensure storage directory exists
-logger.info("Ensuring .storage directory exists...")
-os.makedirs('.storage', exist_ok=True)
+def ensure_required_directories():
+    """Ensure all required directories exist"""
+    required_dirs = ['.storage', 'tools', 'resources', 'assistant']
+    for directory in required_dirs:
+        try:
+            os.makedirs(directory, exist_ok=True)
+            logger.info(f"Ensured directory exists: {directory}")
+        except Exception as e:
+            logger.warning(f"Could not create directory {directory}: {str(e)}")
+
+# Ensure required directories exist
+ensure_required_directories()
 
 # This is the storage path for the new assistant.json file
 assistant_file_path = '.storage/assistant.json'
 assistant_name = "Sofia"
 assistant_instructions_path = 'assistant/instructions.txt'
 
+# Create default instructions if they don't exist
+if not os.path.exists(assistant_instructions_path):
+    logger.info("Creating default instructions file...")
+    try:
+        with open(assistant_instructions_path, 'w') as f:
+            f.write("I am Sofia, a helpful AI assistant.")
+        logger.info("Created default instructions file")
+    except Exception as e:
+        logger.warning(f"Could not create default instructions: {str(e)}")
 
 # Get the instructions for the assistant
 def get_assistant_instructions():
@@ -55,7 +72,8 @@ def create_assistant(client, tool_data):
                 # Generate current hash sums
                 current_tool_hashsum = core_functions.generate_hashsum('tools')
                 current_resource_hashsum = core_functions.generate_hashsum('resources')
-                current_assistant_hashsum = core_functions.generate_hashsum('assistant.py')
+                current_assistant_hashsum = core_functions.generate_hashsum(
+                    'assistant.py')
 
                 current_assistant_data = {
                     'tools_sum': core_functions.generate_hashsum('tools'),
@@ -65,7 +83,9 @@ def create_assistant(client, tool_data):
 
                 # Assuming assistant_data is loaded from a JSON file
                 if compare_assistant_data_hashes(current_assistant_data, assistant_data):
+
                     print("Assistant is up-to-date. Loaded existing assistant ID.")
+
                     return assistant_id
                 else:
                     print("Changes detected. Updating assistant...")
@@ -81,7 +101,9 @@ def create_assistant(client, tool_data):
                             name=assistant_name,
                             instructions=get_assistant_instructions(),
                             model="gpt-4-1106-preview",
-                            tools=[{"type": "file_search"}] + tool_data["tool_configs"])
+                            tools=[{
+                                "type": "file_search"
+                            }] + tool_data["tool_configs"])
 
                         # Update file attachments if there are any
                         if file_ids:
@@ -121,7 +143,9 @@ def create_assistant(client, tool_data):
             instructions=get_assistant_instructions(),
             name=assistant_name,
             model="gpt-4-1106-preview",
-            tools=[{"type": "file_search"}] + tool_data["tool_configs"])
+            tools=[{
+                "type": "file_search"
+            }] + tool_data["tool_configs"])
 
         if file_ids:
             assistant = client.beta.assistants.update(
@@ -157,89 +181,101 @@ def create_assistant(client, tool_data):
     return assistant_id
 
 
+# Save the assistant to a file
 def save_assistant_data(assistant_data, file_path):
-    """
-    Save assistant data into a JSON file.
+  """
+  Save assistant data into a JSON file.
 
-    :param assistant_data: Dictionary containing assistant's data.
-    :param file_path: Path where the JSON file will be saved.
-    """
-    try:
-        # Ensure the .storage directory exists
-        storage_dir = os.path.dirname(file_path)
-        os.makedirs(storage_dir, exist_ok=True)
-        logging.info(f"Storage directory ensured: {storage_dir}")
+  :param assistant_data: Dictionary containing assistant's data.
+  :param file_path: Path where the JSON file will be saved.
+  """
+  try:
+    # Ensure the .storage directory exists
+    storage_dir = os.path.dirname(file_path)
+    os.makedirs(storage_dir, exist_ok=True)
+    logging.info(f"Storage directory ensured: {storage_dir}")
 
-        # Save the data
-        with open(file_path, 'w') as file:
-            json.dump(assistant_data, file, indent=2)
-            logging.info(f"Assistant data saved successfully to {file_path}")
+    # Save the data
+    with open(file_path, 'w') as file:
+      json.dump(assistant_data, file, indent=2)
+      logging.info(f"Assistant data saved successfully to {file_path}")
 
-    except Exception as e:
-        logging.error(f"Error saving assistant data to {file_path}: {str(e)}")
-        raise FileNotFoundError(f"Failed to save assistant data: {str(e)}")
+  except Exception as e:
+    logging.error(f"Error saving assistant data to {file_path}: {str(e)}")
+    raise FileNotFoundError(f"Failed to save assistant data: {str(e)}")
 
 
+# Checks if the Assistant JSON has all required fields
 def is_valid_assistant_data(assistant_data):
-    """
-    Check if the assistant data contains valid values for all required keys.
+  """
+  Check if the assistant data contains valid values for all required keys.
 
-    :param assistant_data: Dictionary containing assistant's data.
-    :return: Boolean indicating whether the data is valid.
-    """
-    required_keys = ['assistant_id', 'tools_sum', 'resources_sum', 'assistant_sum']
-    return all(key in assistant_data and assistant_data[key] for key in required_keys)
+  :param assistant_data: Dictionary containing assistant's data.
+  :return: Boolean indicating whether the data is valid.
+  """
+  required_keys = [
+      'assistant_id', 'tools_sum', 'resources_sum', 'assistant_sum'
+  ]
+  return all(key in assistant_data and assistant_data[key]
+             for key in required_keys)
 
 
+#Compares if all of the fields match with the current hashes
 def create_new_assistant(client, tool_data):
     """Create a new assistant and return its ID"""
-    # Find and validate all given files
-    file_ids = core_functions.get_resource_file_ids(client)
+    logger.info("Creating new assistant...")
+    try:
+        # Try to get file IDs first
+        try:
+            file_ids = core_functions.get_resource_file_ids(client)
+            logger.info(f"Found {len(file_ids)} resource files to attach")
+        except Exception as file_error:
+            logger.warning(f"Could not get resource files: {str(file_error)}")
+            file_ids = []
 
-    # Create the assistant
-    assistant = client.beta.assistants.create(
-        instructions=get_assistant_instructions(),
-        name=assistant_name,
-        model="gpt-4-1106-preview",
-        tools=[{"type": "file_search"}] + tool_data["tool_configs"])
-
-    if file_ids:
-        assistant = client.beta.assistants.update(
-            assistant_id=assistant.id,
-            tools=[{"type": "file_search"}] + tool_data["tool_configs"],
-            file_ids=file_ids,
+        # Create the assistant with all configuration at once
+        assistant = client.beta.assistants.create(
             instructions=get_assistant_instructions(),
             name=assistant_name,
-            model="gpt-4-1106-preview")
+            model="gpt-4-1106-preview",
+            tools=[{
+                "type": "file_search"
+            }] + tool_data["tool_configs"],
+            file_ids=file_ids if file_ids else None)
 
-    # Generate the hashsums
-    tool_hashsum = core_functions.generate_hashsum('tools')
-    resource_hashsum = core_functions.generate_hashsum('resources')
-    assistant_hashsum = core_functions.generate_hashsum('assistant.py')
+        logger.info(f"Assistant created with ID: {assistant.id}")
 
-    # Build and save the JSON
-    assistant_data = {
-        'assistant_id': assistant.id,
-        'tools_sum': tool_hashsum,
-        'resources_sum': resource_hashsum,
-        'assistant_sum': assistant_hashsum,
-    }
+        # Generate the hashsums
+        tool_hashsum = core_functions.generate_hashsum('tools')
+        resource_hashsum = core_functions.generate_hashsum('resources')
+        assistant_hashsum = core_functions.generate_hashsum('assistant.py')
 
-    save_assistant_data(assistant_data, assistant_file_path)
-    print(f"New assistant created with ID: {assistant.id}")
-    return assistant.id
+        # Build and save the JSON
+        assistant_data = {
+            'assistant_id': assistant.id,
+            'tools_sum': tool_hashsum,
+            'resources_sum': resource_hashsum,
+            'assistant_sum': assistant_hashsum,
+        }
+
+        save_assistant_data(assistant_data, assistant_file_path)
+        logger.info(f"Assistant data saved successfully")
+        return assistant.id
+    except Exception as e:
+        logger.error(f"Failed to create new assistant: {str(e)}")
+        raise
 
 def compare_assistant_data_hashes(current_data, saved_data):
-    """
-    Compare current assistant data with saved data.
+  """
+  Compare current assistant data with saved data.
 
-    :param current_data: Current assistant data.
-    :param saved_data: Saved assistant data from JSON file.
-    :return: Boolean indicating whether the data matches.
-    """
-    if not is_valid_assistant_data(saved_data):
-        return False
+  :param current_data: Current assistant data.
+  :param saved_data: Saved assistant data from JSON file.
+  :return: Boolean indicating whether the data matches.
+  """
+  if not is_valid_assistant_data(saved_data):
+    return False
 
-    return (current_data['tools_sum'] == saved_data['tools_sum']
-            and current_data['resources_sum'] == saved_data['resources_sum']
-            and current_data['assistant_sum'] == saved_data['assistant_sum'])
+  return (current_data['tools_sum'] == saved_data['tools_sum']
+          and current_data['resources_sum'] == saved_data['resources_sum']
+          and current_data['assistant_sum'] == saved_data['assistant_sum'])
