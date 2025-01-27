@@ -62,7 +62,7 @@ def create_assistant(client, tool_data):
               tools=[{
                   "type": "retrieval"
               }] + tool_data["tool_configs"],
-              file_ids=file_ids)
+              files=file_ids)
 
           # Build the JSON
           assistant_data = {
@@ -92,7 +92,7 @@ def create_assistant(client, tool_data):
         tools=[{
             "type": "retrieval"
         }] + tool_data["tool_configs"],
-        file_ids=file_ids)
+        files=file_ids)
 
     # Print the assistant ID or any other details you need
     print(f"Assistant ID: {assistant.id}")
