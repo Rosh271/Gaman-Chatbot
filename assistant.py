@@ -240,8 +240,7 @@ def create_new_assistant(client, tool_data):
             model="gpt-4-1106-preview",
             tools=[{
                 "type": "file_search"
-            }] + tool_data["tool_configs"],
-            files=file_ids if file_ids else None)
+            }] + tool_data["tool_configs"])
 
         logger.info(f"Assistant created with ID: {assistant.id}")
 
