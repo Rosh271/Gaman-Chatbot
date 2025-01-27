@@ -98,14 +98,27 @@ def setup_routes(app, client, tool_data, assistant_id):
 
                 # Retrieve response
                 messages = client.beta.threads.messages.list(thread_id=thread_id)
-                response = messages.data[0].content[0].text.value
+                message = messages.data[0]
                 
-                logging.info(f"Assistant response: {response}")
-                return jsonify({
-                    "response": response,
+                # Process response content
+                formatted_response = {
+                    "text": "",
+                    "media": [],
                     "status": "success",
                     "thread_id": thread_id
-                })
+                }
+                
+                for content in message.content:
+                    if hasattr(content, 'text'):
+                        formatted_response["text"] = content.text.value
+                    elif hasattr(content, 'image_file'):
+                        formatted_response["media"].append({
+                            "type": "image",
+                            "url": content.image_file.file_id
+                        })
+                    
+                logging.info(f"Formatted response: {formatted_response}")
+                return jsonify(formatted_response)
 
             except Exception as e:
                 return handle_error(f"Error processing message: {str(e)}")
