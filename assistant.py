@@ -1,6 +1,10 @@
 import os
 import core_functions
 import json
+import logging
+
+# Ensure storage directory exists
+os.makedirs('.storage', exist_ok=True)
 
 # This is the storage path for the new assistant.json file
 assistant_file_path = '.storage/assistant.json'
