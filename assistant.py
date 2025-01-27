@@ -9,9 +9,11 @@ assistant_file_path = '.storage/assistant.json'
 assistant_name = "Sofia"
 assistant_instructions_path = 'assistant/instructions.txt'
 
+
 class AssistantError(Exception):
     """Custom exception for Assistant-related errors"""
     pass
+
 
 def get_assistant_instructions() -> str:
     """Get the instructions for the assistant from file"""
@@ -19,11 +21,14 @@ def get_assistant_instructions() -> str:
         with open(assistant_instructions_path, 'r') as file:
             return file.read()
     except FileNotFoundError:
-        raise AssistantError(f"Instructions file not found at {assistant_instructions_path}")
+        raise AssistantError(
+            f"Instructions file not found at {assistant_instructions_path}")
     except Exception as e:
         raise AssistantError(f"Error reading instructions: {str(e)}")
 
-def save_assistant_data(assistant_data: Dict[str, Any], file_path: str) -> None:
+
+def save_assistant_data(assistant_data: Dict[str, Any],
+                        file_path: str) -> None:
     """Save assistant data into a JSON file with error handling"""
     try:
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -32,20 +37,25 @@ def save_assistant_data(assistant_data: Dict[str, Any], file_path: str) -> None:
     except Exception as e:
         raise AssistantError(f"Error saving assistant data: {str(e)}")
 
+
 def is_valid_assistant_data(assistant_data: Dict[str, Any]) -> bool:
     """Validate assistant data structure"""
-    required_keys = ['assistant_id', 'tools_sum', 'resources_sum', 'assistant_sum']
-    return all(key in assistant_data and assistant_data[key] for key in required_keys)
+    required_keys = [
+        'assistant_id', 'tools_sum', 'resources_sum', 'assistant_sum'
+    ]
+    return all(key in assistant_data and assistant_data[key]
+               for key in required_keys)
 
-def compare_assistant_data_hashes(current_data: Dict[str, str], saved_data: Dict[str, str]) -> bool:
+
+def compare_assistant_data_hashes(current_data: Dict[str, str],
+                                  saved_data: Dict[str, str]) -> bool:
     """Compare assistant data hashes"""
     if not is_valid_assistant_data(saved_data):
         return False
 
-    return all(
-        current_data[key] == saved_data[key]
-        for key in ['tools_sum', 'resources_sum', 'assistant_sum']
-    )
+    return all(current_data[key] == saved_data[key]
+               for key in ['tools_sum', 'resources_sum', 'assistant_sum'])
+
 
 def create_assistant(client, tool_data: Dict[str, Any]) -> Optional[str]:
     """Create or load an OpenAI assistant with v2 API support"""
@@ -58,6 +68,7 @@ def create_assistant(client, tool_data: Dict[str, Any]) -> Optional[str]:
         logging.error(f"Assistant creation/update failed: {str(e)}")
         raise AssistantError(f"Assistant operation failed: {str(e)}")
 
+
 def _create_new_assistant(client, tool_data: Dict[str, Any]) -> str:
     """Create a new assistant with v2 API"""
     try:
@@ -69,9 +80,10 @@ def _create_new_assistant(client, tool_data: Dict[str, Any]) -> str:
             name=assistant_name,
             instructions=get_assistant_instructions(),
             model="gpt-4-1106-preview",
-            tools=[{"type": "retrieval"}] + tool_data["tool_configs"],
-            file_ids=file_ids
-        )
+            tools=[{
+                "type": "retrieval"
+            }] + tool_data["tool_configs"],
+            file_ids=file_ids)
 
         # Generate hash sums
         assistant_data = {
@@ -87,6 +99,7 @@ def _create_new_assistant(client, tool_data: Dict[str, Any]) -> str:
 
     except Exception as e:
         raise AssistantError(f"Failed to create new assistant: {str(e)}")
+
 
 def _update_existing_assistant(client, tool_data: Dict[str, Any]) -> str:
     """Update existing assistant with v2 API"""
@@ -116,9 +129,10 @@ def _update_existing_assistant(client, tool_data: Dict[str, Any]) -> str:
             name=assistant_name,
             instructions=get_assistant_instructions(),
             model="gpt-4-1106-preview",
-            tools=[{"type": "retrieval"}] + tool_data["tool_configs"],
-            file_ids=file_ids
-        )
+            tools=[{
+                "type": "retrieval"
+            }] + tool_data["tool_configs"],
+            file_ids=file_ids)
 
         # Update stored data
         assistant_data.update({
