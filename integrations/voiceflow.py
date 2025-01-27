@@ -75,6 +75,20 @@ def setup_routes(app, client, tool_data, assistant_id):
             thread_id = data.get('thread_id')
             user_input = data.get('message', '')
 
+            # Validate thread_id exists
+            if not thread_id:
+                # Create new thread if none provided
+                thread = client.beta.threads.create()
+                thread_id = thread.id
+                logging.info(f"Created new thread with ID: {thread_id}")
+            else:
+                # Verify thread exists
+                try:
+                    client.beta.threads.retrieve(thread_id=thread_id)
+                except Exception as e:
+                    logging.error(f"Thread validation failed: {str(e)}")
+                    return handle_error("Invalid thread_id. Please start a new conversation.")
+
             if not thread_id:
                 return handle_error("Missing thread_id")
 
