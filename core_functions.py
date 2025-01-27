@@ -152,18 +152,111 @@ def process_tool_calls(client, thread_id, run_id, tool_data):
       time.sleep(2)
 
 
+# Constants for file handling
+MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
+ALLOWED_FILE_TYPES = {'.txt', '.pdf', '.doc', '.docx', '.json', '.csv'}
+TEMP_UPLOAD_DIR = '.temp_uploads'
+FILE_METADATA_PATH = '.storage/file_metadata.json'
+
+class FileHandlingError(Exception):
+    """Custom exception for file handling errors"""
+    pass
+
+def validate_file(file_path):
+    """Validate file size and type"""
+    if not os.path.exists(file_path):
+        raise FileHandlingError(f"File not found: {file_path}")
+        
+    file_size = os.path.getsize(file_path)
+    if file_size > MAX_FILE_SIZE:
+        raise FileHandlingError(f"File exceeds maximum size of {MAX_FILE_SIZE/1024/1024}MB")
+        
+    file_ext = os.path.splitext(file_path)[1].lower()
+    if file_ext not in ALLOWED_FILE_TYPES:
+        raise FileHandlingError(f"File type {file_ext} not allowed")
+
+def load_file_metadata():
+    """Load stored file metadata"""
+    if os.path.exists(FILE_METADATA_PATH):
+        try:
+            with open(FILE_METADATA_PATH, 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+def save_file_metadata(metadata):
+    """Save file metadata to storage"""
+    os.makedirs(os.path.dirname(FILE_METADATA_PATH), exist_ok=True)
+    with open(FILE_METADATA_PATH, 'w') as f:
+        json.dump(metadata, f, indent=2)
+
+def cleanup_temp_files():
+    """Clean up temporary upload files"""
+    if os.path.exists(TEMP_UPLOAD_DIR):
+        for filename in os.listdir(TEMP_UPLOAD_DIR):
+            file_path = os.path.join(TEMP_UPLOAD_DIR, filename)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                logging.error(f"Error cleaning up file {file_path}: {str(e)}")
+
+def upload_file_to_assistant(client, file_path):
+    """Upload a file to the Assistant API with validation"""
+    try:
+        validate_file(file_path)
+        with open(file_path, 'rb') as file:
+            response = client.files.create(file=file, purpose='assistants')
+            return response.id
+    except Exception as e:
+        raise FileHandlingError(f"Error uploading file: {str(e)}")
+
 # Get all of the available resources
 def get_resource_file_ids(client):
-  file_ids = []
-  resources_folder = 'resources'
-  if os.path.exists(resources_folder):
-    for filename in os.listdir(resources_folder):
-      file_path = os.path.join(resources_folder, filename)
-      if os.path.isfile(file_path):
-        with open(file_path, 'rb') as file:
-          response = client.files.create(file=file, purpose='assistants')
-          file_ids.append(response.id)
-  return file_ids
+    """Get or create file IDs for resources with persistence"""
+    file_ids = []
+    metadata = load_file_metadata()
+    resources_folder = 'resources'
+    
+    if not os.path.exists(resources_folder):
+        return file_ids
+
+    # Create temp directory if needed
+    os.makedirs(TEMP_UPLOAD_DIR, exist_ok=True)
+    
+    try:
+        for filename in os.listdir(resources_folder):
+            file_path = os.path.join(resources_folder, filename)
+            if not os.path.isfile(file_path):
+                continue
+                
+            file_hash = generate_hashsum(file_path)
+            
+            # Check if file already has an ID and hasn't changed
+            if filename in metadata and metadata[filename]['hash'] == file_hash:
+                file_ids.append(metadata[filename]['file_id'])
+                continue
+                
+            # Upload new or modified file
+            file_id = upload_file_to_assistant(client, file_path)
+            file_ids.append(file_id)
+            
+            # Update metadata
+            metadata[filename] = {
+                'file_id': file_id,
+                'hash': file_hash,
+                'uploaded_at': datetime.now().isoformat()
+            }
+            
+        save_file_metadata(metadata)
+        cleanup_temp_files()
+        return file_ids
+        
+    except Exception as e:
+        logging.error(f"Error in get_resource_file_ids: {str(e)}")
+        cleanup_temp_files()
+        return []
 
 
 # Function to load tools from a file
