@@ -113,7 +113,11 @@ def create_assistant(client, tool_data):
     if file_ids:
         assistant = client.beta.assistants.update(
             assistant_id=assistant.id,
-            file_ids=file_ids)
+            tools=[{"type": "file_search"}] + tool_data["tool_configs"],
+            file_ids=file_ids,
+            instructions=get_assistant_instructions(),
+            name=assistant_name,
+            model="gpt-4-1106-preview")
 
     # Print the assistant ID or any other details you need
     print(f"Assistant ID: {assistant.id}")
@@ -153,12 +157,12 @@ def save_assistant_data(assistant_data, file_path):
     storage_dir = os.path.dirname(file_path)
     os.makedirs(storage_dir, exist_ok=True)
     logging.info(f"Storage directory ensured: {storage_dir}")
-    
+
     # Save the data
     with open(file_path, 'w') as file:
       json.dump(assistant_data, file, indent=2)
       logging.info(f"Assistant data saved successfully to {file_path}")
-      
+
   except Exception as e:
     logging.error(f"Error saving assistant data to {file_path}: {str(e)}")
     raise FileNotFoundError(f"Failed to save assistant data: {str(e)}")
@@ -197,7 +201,11 @@ def create_new_assistant(client, tool_data):
     if file_ids:
         assistant = client.beta.assistants.update(
             assistant_id=assistant.id,
-            file_ids=file_ids)
+            tools=[{"type": "file_search"}] + tool_data["tool_configs"],
+            file_ids=file_ids,
+            instructions=get_assistant_instructions(),
+            name=assistant_name,
+            model="gpt-4-1106-preview")
 
     # Generate the hashsums
     tool_hashsum = core_functions.generate_hashsum('tools')
