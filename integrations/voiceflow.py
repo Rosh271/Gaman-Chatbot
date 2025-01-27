@@ -19,8 +19,8 @@ from flask import request, jsonify, abort
 import core_functions
 import os
 import hmac
-import hashlib
 import time
+from typing import Optional, Dict, Any
 
 # Configure logging for this module
 logging.basicConfig(level=logging.INFO)
@@ -38,47 +38,77 @@ def validate_api_key():
         
     return hmac.compare_digest(api_key.encode(), stored_key.encode())
 
+def handle_error(error_msg: str, status_code: int = 400) -> tuple[Dict[str, str], int]:
+    """Standardized error handling"""
+    logging.error(error_msg)
+    return jsonify({"error": error_msg}), status_code
+
 def setup_routes(app, client, tool_data, assistant_id):
     @app.before_request
     def authenticate():
         if request.path.startswith('/voiceflow'):
             if not validate_api_key():
-                logging.warning(f"Invalid API key attempt from {request.remote_addr}")
-                abort(401, description="Invalid API key")
+                return handle_error("Invalid API key", 401)
 
     @app.route('/voiceflow/start', methods=['GET'])
     def start_conversation():
-        logging.info("Starting a new conversation...")
-        thread = client.beta.threads.create()
-        logging.info(f"New thread created with ID: {thread.id}")
-        return jsonify({"thread_id": thread.id})
+        try:
+            logging.info("Starting a new conversation...")
+            thread = client.beta.threads.create()
+            thread_id = thread.id
+            logging.info(f"New thread created with ID: {thread_id}")
+            return jsonify({"thread_id": thread_id, "status": "success"})
+        except Exception as e:
+            return handle_error(f"Failed to start conversation: {str(e)}")
 
     @app.route('/voiceflow/chat', methods=['POST'])
     def chat():
-        logging.info("Entered chat function")
-        data = request.json
-        thread_id = data.get('thread_id')
-        user_input = data.get('message', '')
+        try:
+            logging.info("Processing chat request")
+            data = request.get_json()
+            if not data:
+                return handle_error("No JSON data provided")
 
-        if not thread_id:
-            logging.error("Error: Missing thread_id")
-            return jsonify({"error": "Missing thread_id"}), 400
+            thread_id = data.get('thread_id')
+            user_input = data.get('message', '')
 
-        logging.info(f"Received message: {user_input} for thread ID: {thread_id}")
-        client.beta.threads.messages.create(
-            thread_id=thread_id,
-            role="user",
-            content=user_input
-        )
-        
-        run = client.beta.threads.runs.create(
-            thread_id=thread_id,
-            assistant_id=assistant_id
-        )
-        
-        core_functions.process_tool_calls(client, thread_id, run.id, tool_data)
+            if not thread_id:
+                return handle_error("Missing thread_id")
 
-        messages = client.beta.threads.messages.list(thread_id=thread_id)
-        response = messages.data[0].content[0].text.value
-        logging.info(f"Assistant response: {response}")
-        return jsonify({"response": response})
+            if not user_input.strip():
+                return handle_error("Empty message")
+
+            logging.info(f"Processing message: {user_input} for thread ID: {thread_id}")
+            
+            try:
+                # Create message in thread
+                client.beta.threads.messages.create(
+                    thread_id=thread_id,
+                    role="user",
+                    content=user_input
+                )
+                
+                # Create and process run
+                run = client.beta.threads.runs.create(
+                    thread_id=thread_id,
+                    assistant_id=assistant_id
+                )
+                
+                core_functions.process_tool_calls(client, thread_id, run.id, tool_data)
+
+                # Retrieve response
+                messages = client.beta.threads.messages.list(thread_id=thread_id)
+                response = messages.data[0].content[0].text.value
+                
+                logging.info(f"Assistant response: {response}")
+                return jsonify({
+                    "response": response,
+                    "status": "success",
+                    "thread_id": thread_id
+                })
+
+            except Exception as e:
+                return handle_error(f"Error processing message: {str(e)}")
+
+        except Exception as e:
+            return handle_error(f"Invalid request: {str(e)}")
