@@ -109,7 +109,7 @@ def create_assistant(client, tool_data):
                         if file_ids:
                             assistant = client.beta.assistants.update(
                                 assistant_id=assistant_id,
-                                files=file_ids,
+                                file_ids=file_ids,
                                 instructions=get_assistant_instructions(),
                                 name=assistant_name,
                                 model="gpt-4-1106-preview",
@@ -151,7 +151,7 @@ def create_assistant(client, tool_data):
             assistant = client.beta.assistants.update(
                 assistant_id=assistant.id,
                 tools=[{"type": "file_search"}] + tool_data["tool_configs"],
-                files=file_ids,
+                file_ids=file_ids,
                 instructions=get_assistant_instructions(),
                 name=assistant_name,
                 model="gpt-4-1106-preview")
