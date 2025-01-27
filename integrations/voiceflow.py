@@ -65,14 +65,26 @@ def setup_routes(app, client, tool_data, assistant_id):
             if not user_input:
                 return handle_error("Message cannot be empty")
 
-            # Verify thread exists
+            # Verify thread exists and wait for completion
             try:
-                client.beta.threads.retrieve(thread_id=thread_id)
+                thread = client.beta.threads.retrieve(thread_id=thread_id)
+                if not thread or not thread.id:
+                    raise ValueError("Thread not found")
+                    
+                logging.info(f"Thread validated successfully: {thread_id}")
+                logging.info(f"Processing message: {user_input} for thread ID: {thread_id}")
+                
             except Exception as e:
                 logging.error(f"Thread validation failed: {str(e)}")
-                return handle_error("Invalid thread_id. Please start a new conversation using /voiceflow/start")
-
-            logging.info(f"Processing message: {user_input} for thread ID: {thread_id}")
+                # Create new thread if validation fails
+                thread = client.beta.threads.create()
+                thread_id = thread.id
+                logging.info(f"Created new thread with ID: {thread_id}")
+                return jsonify({
+                    "error": "Invalid thread. New thread created.",
+                    "thread_id": thread_id,
+                    "status": "new_thread"
+                })
 
             try:
                 # Create message in thread
