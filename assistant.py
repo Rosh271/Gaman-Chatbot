@@ -132,7 +132,7 @@ def _update_existing_assistant(client, tool_data: Dict[str, Any]) -> str:
             tools=[{
                 "type": "retrieval"
             }] + tool_data["tool_configs"],
-            file_ids=file_ids)
+            files=file_ids)
 
         # Update stored data
         assistant_data.update({
