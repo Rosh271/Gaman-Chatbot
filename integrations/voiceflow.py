@@ -65,6 +65,9 @@ def setup_routes(app, client, tool_data, assistant_id):
     def chat():
         try:
             logging.info("Processing chat request")
+            if not request.is_json:
+                return handle_error("Request must include 'Content-Type: application/json' header")
+            
             data = request.get_json()
             if not data:
                 return handle_error("No JSON data provided")
