@@ -128,6 +128,8 @@ def save_assistant_data(assistant_data, file_path):
   :param file_path: Path where the JSON file will be saved.
   """
   try:
+    # Create directory if it doesn't exist
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, 'w') as file:
       json.dump(assistant_data, file)
   except Exception as e:
