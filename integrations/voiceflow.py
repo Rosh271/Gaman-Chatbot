@@ -114,7 +114,7 @@ def setup_routes(app, client, tool_data, assistant_id):
                     "thread_id": thread_id
                 }
 
-                formatted_response["text"] = response.text
+                formatted_response["text"] = message.content[0].text.value if hasattr(message.content[0], 'text') else ""
                 if hasattr(message.content[0], 'image_file'):
                     formatted_response["media"].append({
                         "type": "image",
