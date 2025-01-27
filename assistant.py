@@ -76,7 +76,7 @@ def _create_new_assistant(client, tool_data: Dict[str, Any]) -> str:
         file_ids = core_functions.get_resource_file_ids(client)
 
         # Create assistant with v2 API
-        assistant = client.beta.assistants.create(
+        assistant = client.assistants.create(
             name=assistant_name,
             instructions=get_assistant_instructions(),
             model="gpt-4-1106-preview",
@@ -124,7 +124,7 @@ def _update_existing_assistant(client, tool_data: Dict[str, Any]) -> str:
         file_ids = core_functions.get_resource_file_ids(client)
 
         # Update assistant with v2 API
-        assistant = client.beta.assistants.update(
+        assistant = client.assistants.update(
             assistant_id=assistant_id,
             name=assistant_name,
             instructions=get_assistant_instructions(),
