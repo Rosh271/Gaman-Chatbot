@@ -4,7 +4,7 @@ import json
 
 # This is the storage path for the new assistant.json file
 assistant_file_path = '.storage/assistant.json'
-assistant_name = "Jannis Moore"
+assistant_name = "Sofia"
 assistant_instructions_path = 'assistant/instructions.txt'
 
 

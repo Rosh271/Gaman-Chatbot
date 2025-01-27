@@ -206,6 +206,7 @@ def import_integrations():
       # Setup routes for each integration
       if hasattr(module, 'setup_routes'):
         modules[module_name] = module
+      logging.info(f"Imported integrations: {list(modules.keys())}")
   return modules
 
 

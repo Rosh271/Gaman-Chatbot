@@ -13,10 +13,16 @@ within your Replit template. Follow these steps for successful authorization:
    - Select any password of your choice. This password will be used as the value for the `X-API-KEY`  in the request header. It's important to always include this in the header of every request you make.
 
 3. Setup and connect the Voiceflow template:
-   - You can get access to the Voiceflow template directly from within our resource hub: https://hub.integraticus.com/lead-gen-chatbot-template/ (It's free)
+   - You can get access to the Voiceflow template directly from within our resource hub: https://hub.integraticus.com/how-i-build-openai-assistants-in-2024-gpt-chatbot-framework-2-0/ (It's free)
 
-4. Set Headers for the Request:
-   - In your request headers, include the following: 'X-API-KEY': [Your chosen password]
+4. Set the Replit URL:
+ - Within the API Widget inside of the Voiceflow template, you need to adjust the URL to your current Replit URL. You can do that by starting your Replit template and copying the URL from the Web View. Do this for both of the API Widgets. 
+ - Here are the endpoints you can use: 
+   - YOUR_REPLIT_URL/voiceflow/start
+   - YOUR_REPLIT_URL/voiceflow/chat
+
+5. Set Headers for the Request:
+   - In your request headers of the Voiceflow API Widget, include the following: 'X-API-KEY': [Your chosen password]
 """
 
 import logging
@@ -48,6 +54,7 @@ def setup_routes(app, client, tool_data, assistant_id):
   # Route to chat with the assistant
   @app.route('/voiceflow/chat', methods=['POST'])
   def chat():
+    logging.info("Entered chat function")
     core_functions.check_api_key()  # Check the API key
     data = request.json
     thread_id = data.get('thread_id')
