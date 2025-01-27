@@ -97,20 +97,18 @@ def create_assistant(client, tool_data):
     # Find and validate all given files
     file_ids = core_functions.get_resource_file_ids(client)
 
-    # Create the assistant
-    assistant = client.beta.assistants.create(
-        instructions=get_assistant_instructions(),
-        name=assistant_name,
-        model="gpt-4-1106-preview",
-        tools=[{
-            "type": "file_search"
-        }] + tool_data["tool_configs"])
+    # Create the assistant with files if available
+    create_params = {
+        "instructions": get_assistant_instructions(),
+        "name": assistant_name,
+        "model": "gpt-4-1106-preview",
+        "tools": [{"type": "file_search"}] + tool_data["tool_configs"]
+    }
     
-    # Attach files separately if needed
     if file_ids:
-        assistant = client.beta.assistants.update(
-            assistant_id=assistant.id,
-            file_ids=file_ids)
+        create_params["files"] = file_ids
+        
+    assistant = client.beta.assistants.create(**create_params)
 
     # Print the assistant ID or any other details you need
     print(f"Assistant ID: {assistant.id}")
