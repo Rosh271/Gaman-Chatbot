@@ -109,7 +109,7 @@ def create_assistant(client, tool_data):
                         if file_ids:
                             assistant = client.beta.assistants.update(
                                 assistant_id=assistant_id,
-                                file_ids=file_ids,
+                                files=file_ids,
                                 instructions=get_assistant_instructions(),
                                 name=assistant_name,
                                 model="gpt-4-1106-preview",
@@ -151,7 +151,7 @@ def create_assistant(client, tool_data):
             assistant = client.beta.assistants.update(
                 assistant_id=assistant.id,
                 tools=[{"type": "file_search"}] + tool_data["tool_configs"],
-                file_ids=file_ids,
+                files=file_ids,
                 instructions=get_assistant_instructions(),
                 name=assistant_name,
                 model="gpt-4-1106-preview")
@@ -241,7 +241,7 @@ def create_new_assistant(client, tool_data):
             tools=[{
                 "type": "file_search"
             }] + tool_data["tool_configs"],
-            file_ids=file_ids if file_ids else None)
+            files=file_ids if file_ids else None)
 
         logger.info(f"Assistant created with ID: {assistant.id}")
 
