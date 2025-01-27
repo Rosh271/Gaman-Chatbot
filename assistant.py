@@ -1,4 +1,3 @@
-
 import os
 import core_functions
 import json
@@ -61,9 +60,9 @@ def create_assistant(client, tool_data):
               instructions=get_assistant_instructions(),
               model="gpt-4-1106-preview",
               tools=[{
-                  "type": "retrieval"
+                  "type": "file_search"
               }] + tool_data["tool_configs"])
-          
+
           # Update file attachments if there are any
           if file_ids:
               assistant = client.beta.assistants.update(
@@ -97,9 +96,9 @@ def create_assistant(client, tool_data):
         name=assistant_name,
         model="gpt-4-1106-preview",
         tools=[{
-            "type": "retrieval"
+            "type": "file_search"
         }] + tool_data["tool_configs"])
-    
+
     # Then attach files if there are any
     if file_ids:
         assistant = client.beta.assistants.update(
