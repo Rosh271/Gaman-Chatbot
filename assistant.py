@@ -29,7 +29,11 @@ def create_assistant(client, tool_data):
     with open(assistant_file_path, 'r') as file:
       assistant_data = json.load(file)
 
-      assistant_id = assistant_data['assistant_id']
+      assistant_id = assistant_data.get('assistant_id')
+
+      # If assistant_id is empty, create a new assistant instead of updating
+      if not assistant_id:
+          return create_new_assistant(client, tool_data)
 
       # Generate current hash sums
       current_tool_hashsum = core_functions.generate_hashsum('tools')
@@ -176,6 +180,42 @@ def is_valid_assistant_data(assistant_data):
 
 
 #Compares if all of the fields match with the current hashes
+def create_new_assistant(client, tool_data):
+    """Create a new assistant and return its ID"""
+    # Find and validate all given files
+    file_ids = core_functions.get_resource_file_ids(client)
+
+    # Create the assistant
+    assistant = client.beta.assistants.create(
+        instructions=get_assistant_instructions(),
+        name=assistant_name,
+        model="gpt-4-1106-preview",
+        tools=[{
+            "type": "file_search"
+        }] + tool_data["tool_configs"])
+
+    if file_ids:
+        assistant = client.beta.assistants.update(
+            assistant_id=assistant.id,
+            file_ids=file_ids)
+
+    # Generate the hashsums
+    tool_hashsum = core_functions.generate_hashsum('tools')
+    resource_hashsum = core_functions.generate_hashsum('resources')
+    assistant_hashsum = core_functions.generate_hashsum('assistant.py')
+
+    # Build and save the JSON
+    assistant_data = {
+        'assistant_id': assistant.id,
+        'tools_sum': tool_hashsum,
+        'resources_sum': resource_hashsum,
+        'assistant_sum': assistant_hashsum,
+    }
+
+    save_assistant_data(assistant_data, assistant_file_path)
+    print(f"New assistant created with ID: {assistant.id}")
+    return assistant.id
+
 def compare_assistant_data_hashes(current_data, saved_data):
   """
   Compare current assistant data with saved data.
