@@ -62,7 +62,7 @@ def create_assistant(client, tool_data):
               tools=[{
                   "type": "retrieval"
               }] + tool_data["tool_configs"],
-              files=file_ids)
+              file_ids=file_ids)
 
           # Build the JSON
           assistant_data = {
@@ -92,7 +92,7 @@ def create_assistant(client, tool_data):
         tools=[{
             "type": "retrieval"
         }] + tool_data["tool_configs"],
-        files=file_ids)
+        file_ids=file_ids)
 
     # Print the assistant ID or any other details you need
     print(f"Assistant ID: {assistant.id}")
@@ -128,8 +128,6 @@ def save_assistant_data(assistant_data, file_path):
   :param file_path: Path where the JSON file will be saved.
   """
   try:
-    # Create directory if it doesn't exist
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, 'w') as file:
       json.dump(assistant_data, file)
   except Exception as e:
