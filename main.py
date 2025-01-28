@@ -23,10 +23,8 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 if not OPENAI_API_KEY:
   raise ValueError("No OpenAI API key found in environment variables")
 openai.api_key = OPENAI_API_KEY
-client = openai
-
-# Configure OpenAI API for v2 Assistants
-openai.default_headers = {"OpenAI-Beta": "assistants=v2"}
+# Configure OpenAI client with v2 Assistants header
+client = openai.Client(api_key=OPENAI_API_KEY, default_headers={"OpenAI-Beta": "assistants=v2"})
 
 # Initialize all available tools
 tool_data = core_functions.load_tools_from_directory('tools')
