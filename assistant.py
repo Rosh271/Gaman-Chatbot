@@ -45,11 +45,16 @@ def create_new_assistant(client, tool_data):
         raise
 
 # Also update the update section in create_assistant function
+import logging
+
+logger = logging.getLogger(__name__)
+
 def create_assistant(client, tool_data):
     try:
-        # Update the assistant with all properties at once
+        # First create a new assistant
+        assistant = create_new_assistant(client, tool_data)
         update_params = {
-            "assistant_id": assistant_id,
+            "assistant_id": assistant.id,
             "name": assistant_name,
             "instructions": get_assistant_instructions(),
             "model": "gpt-4-1106-preview",
