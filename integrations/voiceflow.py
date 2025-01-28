@@ -34,7 +34,7 @@ def setup_routes(app, client, tool_data, assistant_id):
     def start_conversation():
         try:
             logging.info("Starting a new conversation...")
-            thread = client.beta.threads.create()
+            thread = client.beta.threads.create(headers={"OpenAI-Beta": "assistants=v2"})
             thread_id = thread.id
             logging.info(f"New thread created with ID: {thread_id}")
             return jsonify({
@@ -91,19 +91,21 @@ def setup_routes(app, client, tool_data, assistant_id):
                 message = client.beta.threads.messages.create(
                     thread_id=thread_id,
                     role="user",
-                    content=user_input
+                    content=user_input,
+                    headers={"OpenAI-Beta": "assistants=v2"}
                 )
 
                 # Create and process run
                 run = client.beta.threads.runs.create(
                     thread_id=thread_id,
-                    assistant_id=assistant_id
+                    assistant_id=assistant_id,
+                    headers={"OpenAI-Beta": "assistants=v2"}
                 )
 
                 core_functions.process_tool_calls(client, thread_id, run.id, tool_data)
 
                 # Retrieve response
-                messages = client.beta.threads.messages.list(thread_id=thread_id)
+                messages = client.beta.threads.messages.list(thread_id=thread_id, headers={"OpenAI-Beta": "assistants=v2"})
                 message = messages.data[0]
 
                 # Process response content
