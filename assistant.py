@@ -108,7 +108,9 @@ def create_assistant(client, tool_data):
         model="gpt-4o-mini",
         tools=[{
             "type": "file_search"
-        }] + tool_data["tool_configs"])
+        }] + tool_data["tool_configs"],
+        headers={"OpenAI-Beta": "assistants=v2"}
+    )
 
     if file_ids:
         assistant = client.beta.assistants.update(
