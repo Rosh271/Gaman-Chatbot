@@ -104,7 +104,7 @@ def setup_routes(app, client, tool_data, assistant_id):
 
                 # Retrieve response
                 messages = client.beta.threads.messages.list(thread_id=thread_id)
-                message = messages.data[0]
+                message = messages.data[-1]
 
                 # Process response content
                 formatted_response = {
