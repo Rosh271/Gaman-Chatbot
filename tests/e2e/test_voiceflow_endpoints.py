@@ -1,47 +1,43 @@
 
 import pytest
-from main import app
 import json
 import os
 import openai
+from main import app
 
 @pytest.fixture(autouse=True)
-def mock_openai(monkeypatch):
+def mock_openai_client(monkeypatch):
     class MockThread:
         def __init__(self):
-            self.id = "test_thread_id"
+            self.id = "mock_thread_id"
     
     class MockMessage:
-        class Content:
-            def __init__(self):
-                self.text = type('obj', (object,), {'value': 'Test response'})
-        
         def __init__(self):
-            self.content = [self.Content()]
+            self.content = [type('obj', (object,), {'text': {'value': 'Test response'}})]
             self.data = [self]
     
     class MockRun:
         def __init__(self):
-            self.id = "test_run_id"
+            self.id = "mock_run_id"
             self.status = "completed"
     
     class MockThreads:
-        def create(self, **kwargs):
+        def create(self):
             return MockThread()
-        def retrieve(self, **kwargs):
+        def retrieve(self, thread_id):
             return MockThread()
         
         class Messages:
-            def create(self, **kwargs):
+            def create(self, thread_id, role, content):
                 return MockMessage()
-            def list(self, **kwargs):
+            def list(self, thread_id):
                 return MockMessage()
         messages = Messages()
         
         class Runs:
-            def create(self, **kwargs):
+            def create(self, thread_id, assistant_id):
                 return MockRun()
-            def retrieve(self, **kwargs):
+            def retrieve(self, thread_id, run_id):
                 return MockRun()
         runs = Runs()
     
@@ -49,7 +45,8 @@ def mock_openai(monkeypatch):
         threads = MockThreads()
     
     class MockClient:
-        beta = MockBeta()
+        def __init__(self, api_key, default_headers=None):
+            self.beta = MockBeta()
     
     monkeypatch.setattr(openai, "Client", MockClient)
 
