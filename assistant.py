@@ -53,8 +53,7 @@ def create_assistant(client, tool_data):
                     name=assistant_name,
                     instructions=get_assistant_instructions(),
                     model="gpt-4-turbo-preview",
-                    tools=[{"type": "file_search"}, {"type": "code_interpreter"}] + tool_data["tool_configs"],
-                    tool_resources=tool_resources
+                    tools=[{"type": "file_search"}, {"type": "code_interpreter"}] + tool_data["tool_configs"]
                 )
 
                 assistant_data = {
@@ -89,8 +88,7 @@ def create_new_assistant(client, tool_data):
             instructions=get_assistant_instructions(),
             name=assistant_name,
             model="gpt-4-turbo-preview",
-            tools=[{"type": "file_search"}, {"type": "code_interpreter"}] + tool_data["tool_configs"],
-            tool_resources=tool_resources
+            tools=[{"type": "file_search"}, {"type": "code_interpreter"}] + tool_data["tool_configs"]
         )
 
         tool_hashsum = core_functions.generate_hashsum('tools')
