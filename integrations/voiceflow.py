@@ -88,14 +88,14 @@ def setup_routes(app, client, tool_data, assistant_id):
 
             try:
                 # Create message in thread
-                message = client.threads.messages.create(
+                message = client.beta.threads.messages.create(
                     thread_id=thread_id,
                     role="user",
                     content=user_input
                 )
 
                 # Create and process run
-                run = client.threads.runs.create(
+                run = client.beta.threads.runs.create(
                     thread_id=thread_id,
                     assistant_id=assistant_id
                 )
