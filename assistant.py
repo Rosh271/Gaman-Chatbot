@@ -66,9 +66,9 @@ def create_assistant(client, tool_data):
               assistant_id=assistant_id,
               name=assistant_name,
               instructions=get_assistant_instructions(),
-              model="gpt-4o-mini",
+              model="gpt-4-turbo-preview",
               tools=[{
-                  "type": "file_search"
+                  "type": "retrieval"
               }] + tool_data["tool_configs"])
 
           # Update file attachments if there are any
@@ -78,8 +78,8 @@ def create_assistant(client, tool_data):
                   file_ids=file_ids,
                   instructions=get_assistant_instructions(),
                   name=assistant_name,
-                  model="gpt-4o-mini",
-                  tools=[{"type": "file_search"}] + tool_data["tool_configs"])
+                  model="gpt-4-turbo-preview",
+                  tools=[{"type": "retrieval"}] + tool_data["tool_configs"])
 
           # Build the JSON
           assistant_data = {
@@ -105,19 +105,19 @@ def create_assistant(client, tool_data):
     assistant = client.beta.assistants.create(
         instructions=get_assistant_instructions(),
         name=assistant_name,
-        model="gpt-4o-mini",
+        model="gpt-4-turbo-preview",
         tools=[{
-            "type": "file_search"
+            "type": "retrieval"
         }] + tool_data["tool_configs"])
 
     if file_ids:
         assistant = client.beta.assistants.update(
             assistant_id=assistant.id,
-            tools=[{"type": "file_search"}] + tool_data["tool_configs"],
+            tools=[{"type": "retrieval"}] + tool_data["tool_configs"],
             file_ids=file_ids,
             instructions=get_assistant_instructions(),
             name=assistant_name,
-            model="gpt-4o-mini")
+            model="gpt-4-turbo-preview")
 
     # Print the assistant ID or any other details you need
     print(f"Assistant ID: {assistant.id}")
@@ -193,19 +193,19 @@ def create_new_assistant(client, tool_data):
     assistant = client.beta.assistants.create(
         instructions=get_assistant_instructions(),
         name=assistant_name,
-        model="gpt-4o-mini",
+        model="gpt-4-turbo-preview",
         tools=[{
-            "type": "file_search"
+            "type": "retrieval"
         }] + tool_data["tool_configs"])
 
     if file_ids:
         assistant = client.beta.assistants.update(
             assistant_id=assistant.id,
-            tools=[{"type": "file_search"}] + tool_data["tool_configs"],
+            tools=[{"type": "retrieval"}] + tool_data["tool_configs"],
             file_ids=file_ids,
             instructions=get_assistant_instructions(),
             name=assistant_name,
-            model="gpt-4o-mini")
+            model="gpt-4-turbo-preview")
 
     # Generate the hashsums
     tool_hashsum = core_functions.generate_hashsum('tools')
