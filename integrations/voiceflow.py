@@ -34,7 +34,7 @@ def setup_routes(app, client, tool_data, assistant_id):
     def start_conversation():
         try:
             logging.info("Starting a new conversation...")
-            thread = client.beta.threads.create()
+            thread = client.beta.threads.create(headers={"OpenAI-Beta": "assistants=v2"})
             thread_id = thread.id
             logging.info(f"New thread created with ID: {thread_id}")
             return jsonify({
@@ -77,7 +77,7 @@ def setup_routes(app, client, tool_data, assistant_id):
             except Exception as e:
                 logging.error(f"Thread validation failed: {str(e)}")
                 # Create new thread if validation fails
-                thread = client.beta.threads.create()
+                thread = client.beta.threads.create(headers={"OpenAI-Beta": "assistants=v2"})
                 thread_id = thread.id
                 logging.info(f"Created new thread with ID: {thread_id}")
                 return jsonify({
