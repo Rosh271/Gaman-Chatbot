@@ -70,10 +70,10 @@ def setup_routes(app, client, tool_data, assistant_id):
                 thread = client.beta.threads.retrieve(thread_id=thread_id)
                 if not thread or not thread.id:
                     raise ValueError("Thread not found")
-                    
+
                 logging.info(f"Thread validated successfully: {thread_id}")
                 logging.info(f"Processing message: {user_input} for thread ID: {thread_id}")
-                
+
             except Exception as e:
                 logging.error(f"Thread validation failed: {str(e)}")
                 # Create new thread if validation fails
@@ -111,24 +111,15 @@ def setup_routes(app, client, tool_data, assistant_id):
                     "text": "",
                     "media": [],
                     "status": "success",
-                    "thread_id": thread_id,
-                    "response_id": message.id
+                    "thread_id": thread_id
                 }
 
-                if message.content and len(message.content) > 0:
-                    content = message.content[0]
-                    if hasattr(content, 'text'):
-                        response_text = content.text.value
-                        # Only send response if it's not the default question
-                        if response_text.strip() != "¿Cómo te puedo ayudar?":
-                            formatted_response["text"] = response_text
-                        else:
-                            formatted_response["text"] = "I'm here to assist you. Please feel free to ask any questions."
-                    if hasattr(content, 'image_file'):
-                        formatted_response["media"].append({
-                            "type": "image",
-                            "url": content.image_file.file_id
-                        })
+                formatted_response["text"] = message.content[0].text.value if hasattr(message.content[0], 'text') else ""
+                if hasattr(message.content[0], 'image_file'):
+                    formatted_response["media"].append({
+                        "type": "image",
+                        "url": message.content[0].image_file.file_id
+                    })
 
                 logging.info(f"Response prepared: {formatted_response}")
                 return jsonify(formatted_response)
