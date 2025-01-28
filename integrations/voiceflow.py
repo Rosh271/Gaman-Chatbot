@@ -34,7 +34,7 @@ def setup_routes(app, client, tool_data, assistant_id):
     def start_conversation():
         try:
             logging.info("Starting a new conversation...")
-            thread = client.beta.threads.create()
+            thread = client.beta.threads.create(headers={"OpenAI-Beta": "assistants=v2"})
             thread_id = thread.id
             logging.info(f"New thread created with ID: {thread_id}")
             return jsonify({
@@ -70,14 +70,14 @@ def setup_routes(app, client, tool_data, assistant_id):
                 thread = client.beta.threads.retrieve(thread_id=thread_id)
                 if not thread or not thread.id:
                     raise ValueError("Thread not found")
-                    
+
                 logging.info(f"Thread validated successfully: {thread_id}")
                 logging.info(f"Processing message: {user_input} for thread ID: {thread_id}")
-                
+
             except Exception as e:
                 logging.error(f"Thread validation failed: {str(e)}")
                 # Create new thread if validation fails
-                thread = client.beta.threads.create()
+                thread = client.beta.threads.create(headers={"OpenAI-Beta": "assistants=v2"})
                 thread_id = thread.id
                 logging.info(f"Created new thread with ID: {thread_id}")
                 return jsonify({
@@ -115,15 +115,11 @@ def setup_routes(app, client, tool_data, assistant_id):
                 }
 
                 formatted_response["text"] = message.content[0].text.value if hasattr(message.content[0], 'text') else ""
-                
-                # Handle attachments in v2
-                if hasattr(message, 'attachments') and message.attachments:
-                    for attachment in message.attachments:
-                        if any(tool["type"] == "code_interpreter" for tool in attachment.tools):
-                            formatted_response["media"].append({
-                                "type": "image",
-                                "url": attachment.file_id
-                            })
+                if hasattr(message.content[0], 'image_file'):
+                    formatted_response["media"].append({
+                        "type": "image",
+                        "url": message.content[0].image_file.file_id
+                    })
 
                 logging.info(f"Response prepared: {formatted_response}")
                 return jsonify(formatted_response)
