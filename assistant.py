@@ -1,4 +1,14 @@
 import core_functions
+import os
+
+assistant_name = "GPT Assistant"
+
+def get_assistant_instructions():
+    instruction_path = os.path.join('assistant', 'instructions.txt')
+    if os.path.exists(instruction_path):
+        with open(instruction_path, 'r') as f:
+            return f.read().strip()
+    return "You are a helpful assistant."
 
 def create_new_assistant(client, tool_data):
     """Create a new assistant with all properties set at once"""
