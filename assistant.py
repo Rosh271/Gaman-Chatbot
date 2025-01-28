@@ -46,8 +46,6 @@ def create_new_assistant(client, tool_data):
 
 # Also update the update section in create_assistant function
 def create_assistant(client, tool_data):
-    # ... (previous code remains the same until the update section)
-
     try:
         # Update the assistant with all properties at once
         update_params = {
@@ -62,3 +60,7 @@ def create_assistant(client, tool_data):
             update_params["file_ids"] = file_ids
 
         assistant = client.beta.assistants.update(**update_params)
+        return assistant.id
+    except Exception as e:
+        logger.error(f"Failed to update assistant: {str(e)}")
+        raise
