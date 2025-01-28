@@ -1,3 +1,5 @@
+import core_functions
+
 def create_new_assistant(client, tool_data):
     """Create a new assistant with all properties set at once"""
     logger.info("Creating new assistant...")
