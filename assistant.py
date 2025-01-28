@@ -66,7 +66,7 @@ def create_assistant(client, tool_data):
               assistant_id=assistant_id,
               name=assistant_name,
               instructions=get_assistant_instructions(),
-              model="gpt-4-1106-preview",
+              model="gpt-4o-mini",
               tools=[{
                   "type": "file_search"
               }] + tool_data["tool_configs"])
@@ -78,7 +78,7 @@ def create_assistant(client, tool_data):
                   file_ids=file_ids,
                   instructions=get_assistant_instructions(),
                   name=assistant_name,
-                  model="gpt-4-1106-preview",
+                  model="gpt-4o-mini",
                   tools=[{"type": "file_search"}] + tool_data["tool_configs"])
 
           # Build the JSON
@@ -105,7 +105,7 @@ def create_assistant(client, tool_data):
     assistant = client.beta.assistants.create(
         instructions=get_assistant_instructions(),
         name=assistant_name,
-        model="gpt-4-1106-preview",
+        model="gpt-4o-mini",
         tools=[{
             "type": "file_search"
         }] + tool_data["tool_configs"])
@@ -117,7 +117,7 @@ def create_assistant(client, tool_data):
             file_ids=file_ids,
             instructions=get_assistant_instructions(),
             name=assistant_name,
-            model="gpt-4-1106-preview")
+            model="gpt-4o-mini")
 
     # Print the assistant ID or any other details you need
     print(f"Assistant ID: {assistant.id}")
@@ -193,7 +193,7 @@ def create_new_assistant(client, tool_data):
     assistant = client.beta.assistants.create(
         instructions=get_assistant_instructions(),
         name=assistant_name,
-        model="gpt-4-1106-preview",
+        model="gpt-4o-mini",
         tools=[{
             "type": "file_search"
         }] + tool_data["tool_configs"])
@@ -205,7 +205,7 @@ def create_new_assistant(client, tool_data):
             file_ids=file_ids,
             instructions=get_assistant_instructions(),
             name=assistant_name,
-            model="gpt-4-1106-preview")
+            model="gpt-4o-mini")
 
     # Generate the hashsums
     tool_hashsum = core_functions.generate_hashsum('tools')
