@@ -3,6 +3,55 @@ import pytest
 from main import app
 import json
 import os
+import openai
+
+@pytest.fixture(autouse=True)
+def mock_openai(monkeypatch):
+    class MockThread:
+        def __init__(self):
+            self.id = "test_thread_id"
+    
+    class MockMessage:
+        class Content:
+            def __init__(self):
+                self.text = type('obj', (object,), {'value': 'Test response'})
+        
+        def __init__(self):
+            self.content = [self.Content()]
+            self.data = [self]
+    
+    class MockRun:
+        def __init__(self):
+            self.id = "test_run_id"
+            self.status = "completed"
+    
+    class MockThreads:
+        def create(self, **kwargs):
+            return MockThread()
+        def retrieve(self, **kwargs):
+            return MockThread()
+        
+        class Messages:
+            def create(self, **kwargs):
+                return MockMessage()
+            def list(self, **kwargs):
+                return MockMessage()
+        messages = Messages()
+        
+        class Runs:
+            def create(self, **kwargs):
+                return MockRun()
+            def retrieve(self, **kwargs):
+                return MockRun()
+        runs = Runs()
+    
+    class MockBeta:
+        threads = MockThreads()
+    
+    class MockClient:
+        beta = MockBeta()
+    
+    monkeypatch.setattr(openai, "Client", MockClient)
 
 @pytest.fixture
 def client():
