@@ -6,6 +6,7 @@ import os
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
+    os.environ['CUSTOM_API_KEY'] = 'test-token'
     with app.test_client() as client:
         yield client
 
@@ -16,7 +17,8 @@ def test_voiceflow_start_endpoint_unauthorized(client):
 
     # Define headers for authorized request
     headers = {
-        'Authorization': 'Bearer test-token'
+        'X-API-KEY': 'test-token',
+        'Content-Type': 'application/json'
     }
 
     # First create a thread
