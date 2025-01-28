@@ -70,10 +70,10 @@ def setup_routes(app, client, tool_data, assistant_id):
                 thread = client.beta.threads.retrieve(thread_id=thread_id)
                 if not thread or not thread.id:
                     raise ValueError("Thread not found")
-
+                    
                 logging.info(f"Thread validated successfully: {thread_id}")
                 logging.info(f"Processing message: {user_input} for thread ID: {thread_id}")
-
+                
             except Exception as e:
                 logging.error(f"Thread validation failed: {str(e)}")
                 # Create new thread if validation fails
