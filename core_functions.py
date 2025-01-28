@@ -166,11 +166,11 @@ def validate_file(file_path):
     """Validate file size and type"""
     if not os.path.exists(file_path):
         raise FileHandlingError(f"File not found: {file_path}")
-
+        
     file_size = os.path.getsize(file_path)
     if file_size > MAX_FILE_SIZE:
         raise FileHandlingError(f"File exceeds maximum size of {MAX_FILE_SIZE/1024/1024}MB")
-
+        
     file_ext = os.path.splitext(file_path)[1].lower()
     if file_ext not in ALLOWED_FILE_TYPES:
         raise FileHandlingError(f"File type {file_ext} not allowed")
@@ -207,67 +207,56 @@ def upload_file_to_assistant(client, file_path):
     try:
         validate_file(file_path)
         with open(file_path, 'rb') as file:
-            response = client.files.create(
-                file=file,
-                purpose='assistants'
-            )
+            response = client.files.create(file=file, purpose='assistants')
             return response.id
     except Exception as e:
-        logging.error(f"Error uploading file {file_path}: {str(e)}")
         raise FileHandlingError(f"Error uploading file: {str(e)}")
 
+# Get all of the available resources
 def get_resource_file_ids(client):
     """Get or create file IDs for resources with persistence"""
     file_ids = []
     metadata = load_file_metadata()
     resources_folder = 'resources'
-
+    
     if not os.path.exists(resources_folder):
-        logging.info("Resources folder does not exist, skipping file uploads")
-        return []
+        return file_ids
 
     # Create temp directory if needed
     os.makedirs(TEMP_UPLOAD_DIR, exist_ok=True)
-
+    
     try:
         for filename in os.listdir(resources_folder):
             file_path = os.path.join(resources_folder, filename)
             if not os.path.isfile(file_path):
                 continue
-
+                
             file_hash = generate_hashsum(file_path)
-
-            try:
-                # Check if file already has an ID and hasn't changed
-                if filename in metadata and metadata[filename]['hash'] == file_hash:
-                    file_ids.append(metadata[filename]['file_id'])
-                    logging.info(f"Using existing file ID for {filename}")
-                    continue
-
-                # Upload new or modified file
-                logging.info(f"Uploading file: {filename}")
-                file_id = upload_file_to_assistant(client, file_path)
-                file_ids.append(file_id)
-
-                # Update metadata
-                metadata[filename] = {
-                    'file_id': file_id,
-                    'hash': file_hash,
-                    'uploaded_at': datetime.now().isoformat()
-                }
-            except Exception as e:
-                logging.error(f"Error processing file {filename}: {str(e)}")
+            
+            # Check if file already has an ID and hasn't changed
+            if filename in metadata and metadata[filename]['hash'] == file_hash:
+                file_ids.append(metadata[filename]['file_id'])
                 continue
-
-        # Save updated metadata
+                
+            # Upload new or modified file
+            file_id = upload_file_to_assistant(client, file_path)
+            file_ids.append(file_id)
+            
+            # Update metadata
+            metadata[filename] = {
+                'file_id': file_id,
+                'hash': file_hash,
+                'uploaded_at': datetime.now().isoformat()
+            }
+            
         save_file_metadata(metadata)
-        return file_ids
-
-    except Exception as e:
-        logging.error(f"Error getting resource file IDs: {str(e)}")
-        return []
-    finally:
         cleanup_temp_files()
+        return file_ids
+        
+    except Exception as e:
+        logging.error(f"Error in get_resource_file_ids: {str(e)}")
+        cleanup_temp_files()
+        return []
 
 
 # Function to load tools from a file
@@ -318,7 +307,7 @@ def import_integrations():
 def generate_hashsum(path, hash_func=hashlib.sha256):
   """
   Generates a hashsum for a file or all the files in a directory.
-
+  
   :param path: Path to the file or folder.
   :param hash_func: Hash function to use, default is sha256.
   :return: Hexadecimal hashsum.
