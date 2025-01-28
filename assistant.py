@@ -48,7 +48,7 @@ def create_assistant(client, tool_data):
                 }
 
             try:
-                assistant = client.assistants.update(
+                assistant = client.beta.assistants.update(
                     assistant_id=assistant_id,
                     name=assistant_name,
                     instructions=get_assistant_instructions(),
@@ -84,7 +84,7 @@ def create_new_assistant(client, tool_data):
         }
 
     try:
-        assistant = client.assistants.create(
+        assistant = client.beta.assistants.create(
             instructions=get_assistant_instructions(),
             name=assistant_name,
             model="gpt-4-turbo-preview",
