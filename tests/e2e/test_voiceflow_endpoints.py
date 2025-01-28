@@ -10,9 +10,14 @@ def client():
         yield client
 
 def test_voiceflow_start_endpoint_unauthorized(client):
+    # Test without headers first
     response = client.get('/voiceflow/start')
     assert response.status_code == 401
 
+    # Define headers for authorized request
+    headers = {
+        'Authorization': 'Bearer test-token'
+    }
 
     # First create a thread
     response = client.get('/voiceflow/start', headers=headers)
