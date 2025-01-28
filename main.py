@@ -26,7 +26,8 @@ openai.api_key = OPENAI_API_KEY
 client = openai
 
 # Configure OpenAI API for v2 Assistants
-openai.default_headers = {"OpenAI-Beta": "assistants=v2"}
+client = openai.OpenAI()
+client.default_headers = {"OpenAI-Beta": "assistants=v2"}
 
 # Initialize all available tools
 tool_data = core_functions.load_tools_from_directory('tools')

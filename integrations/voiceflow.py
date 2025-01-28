@@ -115,11 +115,15 @@ def setup_routes(app, client, tool_data, assistant_id):
                 }
 
                 formatted_response["text"] = message.content[0].text.value if hasattr(message.content[0], 'text') else ""
-                if hasattr(message.content[0], 'image_file'):
-                    formatted_response["media"].append({
-                        "type": "image",
-                        "url": message.content[0].image_file.file_id
-                    })
+                
+                # Handle attachments in v2
+                if hasattr(message, 'attachments') and message.attachments:
+                    for attachment in message.attachments:
+                        if any(tool["type"] == "code_interpreter" for tool in attachment.tools):
+                            formatted_response["media"].append({
+                                "type": "image",
+                                "url": attachment.file_id
+                            })
 
                 logging.info(f"Response prepared: {formatted_response}")
                 return jsonify(formatted_response)
