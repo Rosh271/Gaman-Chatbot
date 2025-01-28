@@ -111,15 +111,19 @@ def setup_routes(app, client, tool_data, assistant_id):
                     "text": "",
                     "media": [],
                     "status": "success",
-                    "thread_id": thread_id
+                    "thread_id": thread_id,
+                    "response_id": message.id
                 }
 
-                formatted_response["text"] = message.content[0].text.value if hasattr(message.content[0], 'text') else ""
-                if hasattr(message.content[0], 'image_file'):
-                    formatted_response["media"].append({
-                        "type": "image",
-                        "url": message.content[0].image_file.file_id
-                    })
+                if message.content and len(message.content) > 0:
+                    content = message.content[0]
+                    if hasattr(content, 'text'):
+                        formatted_response["text"] = content.text.value
+                    if hasattr(content, 'image_file'):
+                        formatted_response["media"].append({
+                            "type": "image",
+                            "url": content.image_file.file_id
+                        })
 
                 logging.info(f"Response prepared: {formatted_response}")
                 return jsonify(formatted_response)
