@@ -118,7 +118,12 @@ def setup_routes(app, client, tool_data, assistant_id):
                 if message.content and len(message.content) > 0:
                     content = message.content[0]
                     if hasattr(content, 'text'):
-                        formatted_response["text"] = content.text.value
+                        response_text = content.text.value
+                        # Only send response if it's not the default question
+                        if response_text.strip() != "¿Cómo te puedo ayudar?":
+                            formatted_response["text"] = response_text
+                        else:
+                            formatted_response["text"] = "I'm here to assist you. Please feel free to ask any questions."
                     if hasattr(content, 'image_file'):
                         formatted_response["media"].append({
                             "type": "image",
