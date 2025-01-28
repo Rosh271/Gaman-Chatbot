@@ -11,7 +11,6 @@ packaging = "^23.2"
 requests = "^2.31.0"
 flask = "^3.0.0"
 functions = "^0.7.0"
-django-tests-assistant = "^0.3.0"
 config = "^0.5.1"
 
 [tool.pyright]
