@@ -24,7 +24,7 @@ if not OPENAI_API_KEY:
   raise ValueError("No OpenAI API key found in environment variables")
 client = openai.Client(
     api_key=OPENAI_API_KEY,
-    default_headers={"OpenAI-Beta": "assistants=v2"}
+    default_headers={"OpenAI-Beta": "assistants=v1"}
 )
 
 # Initialize all available tools
