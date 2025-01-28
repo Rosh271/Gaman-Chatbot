@@ -100,7 +100,7 @@ def setup_routes(app, client, tool_data, assistant_id):
                 last_messages = conversation_state.data[:3]  # Check last 3 messages
                 greeting_count = sum(
                     1 for msg in last_messages
-                    if any(greeting in msg.content[0].text.value.strip().lower() 
+                    if any(greeting in msg.content[0].text.value.strip().lower()
                            for greeting in GREETING_VARIATIONS)
                 )
 
@@ -111,7 +111,7 @@ def setup_routes(app, client, tool_data, assistant_id):
                          for msg in conversation_state.data
                          if msg.role == "user" and
                          not any(greeting in msg.content[0].text.value.strip().lower()
-                               for greeting in GREETING_VARIATIONS)),
+                                 for greeting in GREETING_VARIATIONS)),
                         None
                     )
 
@@ -167,18 +167,17 @@ def setup_routes(app, client, tool_data, assistant_id):
                         )
                         core_functions.process_tool_calls(client, thread_id, run.id, tool_data)
 
-                # Wait for run to complete
-                while True:
-                    run_status = client.beta.threads.runs.retrieve(
-                        thread_id=thread_id,
-                        run_id=run.id
-                    )
-                    if run_status.status == 'completed':
-                        break
-                    elif run_status.status == 'failed':
-                        raise Exception("Run failed")
-                    time.sleep(1)
-
+                        # Wait for run to complete
+                        while True:
+                            run_status = client.beta.threads.runs.retrieve(
+                                thread_id=thread_id,
+                                run_id=run.id
+                            )
+                            if run_status.status == 'completed':
+                                break
+                            elif run_status.status == 'failed':
+                                raise Exception("Run failed")
+                            time.sleep(1)
                         break
                     except Exception as e:
                         retry_count += 1
