@@ -56,35 +56,24 @@ def client():
         yield client
 
 def test_voiceflow_start_endpoint_unauthorized(client):
-    # Test without headers first
     response = client.get('/voiceflow/start')
     assert response.status_code == 401
 
-    # Set up proper headers
-    os.environ['CUSTOM_API_KEY'] = 'test-token'
+def test_voiceflow_start_endpoint_authorized(client):
+    os.environ['CUSTOM_API_KEY'] = 'test_key'
     headers = {
-        'X-API-KEY': 'test-token',
+        'X-API-KEY': 'test_key',
         'Content-Type': 'application/json'
     }
-
-    # Test with proper headers
+    
     response = client.get('/voiceflow/start', headers=headers)
     assert response.status_code == 200
-    data = response.get_json()
-    assert 'thread_id' in data
-
-def test_voiceflow_start_endpoint_authorized(client):
-    # Set test API key
-    os.environ['CUSTOM_API_KEY'] = 'test_key'
-    headers = {'X-API-KEY': 'test_key'}
-
-    response = client.get('/voiceflow/start', headers=headers)
-    assert response.status_code == 200
-
+    
     data = json.loads(response.data)
     assert 'thread_id' in data
     assert 'status' in data
     assert data['status'] == 'success'
+    assert 'message' in data
 
 def test_voiceflow_chat_endpoint(client):
     os.environ['CUSTOM_API_KEY'] = 'test_key'
