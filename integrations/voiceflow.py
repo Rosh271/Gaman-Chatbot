@@ -34,7 +34,7 @@ def setup_routes(app, client, tool_data, assistant_id):
     def start_conversation():
         try:
             logging.info("Starting a new conversation...")
-            thread = client.beta.threads.create()
+            thread = client.threads.create()
             thread_id = thread.id
             logging.info(f"New thread created with ID: {thread_id}")
             return jsonify({
@@ -67,7 +67,7 @@ def setup_routes(app, client, tool_data, assistant_id):
 
             # Verify thread exists and wait for completion
             try:
-                thread = client.beta.threads.retrieve(thread_id=thread_id)
+                thread = client.threads.retrieve(thread_id=thread_id)
                 if not thread or not thread.id:
                     raise ValueError("Thread not found")
 
@@ -77,7 +77,7 @@ def setup_routes(app, client, tool_data, assistant_id):
             except Exception as e:
                 logging.error(f"Thread validation failed: {str(e)}")
                 # Create new thread if validation fails
-                thread = client.beta.threads.create()
+                thread = client.threads.create()
                 thread_id = thread.id
                 logging.info(f"Created new thread with ID: {thread_id}")
                 return jsonify({
@@ -88,14 +88,14 @@ def setup_routes(app, client, tool_data, assistant_id):
 
             try:
                 # Create message in thread
-                message = client.beta.threads.messages.create(
+                message = client.threads.messages.create(
                     thread_id=thread_id,
                     role="user",
                     content=user_input
                 )
 
                 # Create and process run
-                run = client.beta.threads.runs.create(
+                run = client.threads.runs.create(
                     thread_id=thread_id,
                     assistant_id=assistant_id
                 )
@@ -103,7 +103,7 @@ def setup_routes(app, client, tool_data, assistant_id):
                 core_functions.process_tool_calls(client, thread_id, run.id, tool_data)
 
                 # Retrieve response
-                messages = client.beta.threads.messages.list(thread_id=thread_id)
+                messages = client.threads.messages.list(thread_id=thread_id)
                 message = messages.data[0]
 
                 # Process response content

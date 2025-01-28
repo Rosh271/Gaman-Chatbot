@@ -62,7 +62,7 @@ def create_assistant(client, tool_data):
         try:
           # Update the assistant
           # Update assistant properties
-          assistant = client.beta.assistants.update(
+          assistant = client.assistants.update(
               assistant_id=assistant_id,
               name=assistant_name,
               instructions=get_assistant_instructions(),
@@ -73,7 +73,7 @@ def create_assistant(client, tool_data):
 
           # Update file attachments if there are any
           if file_ids:
-              assistant = client.beta.assistants.update(
+              assistant = client.assistants.update(
                   assistant_id=assistant_id,
                   file_ids=file_ids,
                   instructions=get_assistant_instructions(),
@@ -102,7 +102,7 @@ def create_assistant(client, tool_data):
     file_ids = core_functions.get_resource_file_ids(client)
 
     # Create the assistant
-    assistant = client.beta.assistants.create(
+    assistant = client.assistants.create(
         instructions=get_assistant_instructions(),
         name=assistant_name,
         model="gpt-4-turbo-preview",
@@ -111,7 +111,7 @@ def create_assistant(client, tool_data):
         }] + tool_data["tool_configs"])
 
     if file_ids:
-        assistant = client.beta.assistants.update(
+        assistant = client.assistants.update(
             assistant_id=assistant.id,
             tools=[{"type": "retrieval"}] + tool_data["tool_configs"],
             file_ids=file_ids,
@@ -190,7 +190,7 @@ def create_new_assistant(client, tool_data):
     file_ids = core_functions.get_resource_file_ids(client)
 
     # Create the assistant
-    assistant = client.beta.assistants.create(
+    assistant = client.assistants.create(
         instructions=get_assistant_instructions(),
         name=assistant_name,
         model="gpt-4-turbo-preview",
@@ -199,7 +199,7 @@ def create_new_assistant(client, tool_data):
         }] + tool_data["tool_configs"])
 
     if file_ids:
-        assistant = client.beta.assistants.update(
+        assistant = client.assistants.update(
             assistant_id=assistant.id,
             tools=[{"type": "retrieval"}] + tool_data["tool_configs"],
             file_ids=file_ids,

@@ -119,8 +119,8 @@ def check_openai_version():
 # Process the actions that are initiated by the assistants API
 def process_tool_calls(client, thread_id, run_id, tool_data):
   while True:
-    run_status = client.beta.threads.runs.retrieve(thread_id=thread_id,
-                                                   run_id=run_id)
+    run_status = client.threads.runs.retrieve(thread_id=thread_id,
+                                            run_id=run_id)
     if run_status.status == 'completed':
       break
     elif run_status.status == 'requires_action':
@@ -139,14 +139,14 @@ def process_tool_calls(client, thread_id, run_id, tool_data):
         if function_name in tool_data["function_map"]:
           function_to_call = tool_data["function_map"][function_name]
           output = function_to_call(arguments)
-          client.beta.threads.runs.submit_tool_outputs(thread_id=thread_id,
-                                                       run_id=run_id,
-                                                       tool_outputs=[{
-                                                           "tool_call_id":
-                                                           tool_call.id,
-                                                           "output":
-                                                           json.dumps(output)
-                                                       }])
+          client.threads.runs.submit_tool_outputs(thread_id=thread_id,
+                                                run_id=run_id,
+                                                tool_outputs=[{
+                                                    "tool_call_id":
+                                                    tool_call.id,
+                                                    "output":
+                                                    json.dumps(output)
+                                                }])
         else:
           logging.warning(f"Function {function_name} not found in tool data.")
       time.sleep(2)
