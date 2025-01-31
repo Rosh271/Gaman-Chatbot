@@ -3,238 +3,199 @@ import core_functions
 import json
 import logging
 
-# Ensure storage directory exists
+# Ensure the storage directory exists
 os.makedirs('.storage', exist_ok=True)
-
-# This is the storage path for the new assistant.json file
 assistant_file_path = '.storage/assistant.json'
 assistant_name = "Sofia"
 assistant_instructions_path = 'assistant/instructions.txt'
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
-# Get the instructions for the assistant
 def get_assistant_instructions():
+    """Load assistant instructions from file"""
+    try:
+        with open(assistant_instructions_path, 'r') as file:
+            return file.read()
+    except Exception as e:
+        logging.error(f"Unable to read instruction file: {str(e)}")
+        raise
 
-  # Open the file and read its contents
-  with open(assistant_instructions_path, 'r') as file:
-    return file.read()
+def validate_tool_config(tool):
+    """Validate tool configuration format (fix hierarchy issues)"""
+    # Check if the 'function' key exists
+    if 'function' not in tool:
+        raise ValueError("Tool configuration is missing the 'function' key")
 
+    # Extract the function object
+    func = tool['function']
 
-# Create or load assistant
+    # Check required fields inside the function object
+    required_fields = ['name', 'description', 'parameters']
+    missing = [field for field in required_fields if field not in func]
+
+    if missing:
+        raise ValueError(f"Missing fields in the 'function' object of tool configuration: {missing}")
+
+    return tool
+
+def generate_tools_config(tool_data):
+    """Generate tool configurations compliant with v2 API requirements"""
+    tools = [{"type": "file_search"}]
+
+    if "tool_configs" in tool_data:
+        for tool in tool_data["tool_configs"]:
+            try:
+                validated_tool = validate_tool_config(tool)
+                tools.append({
+                    "type": "function",
+                    "function": {
+                        "name": validated_tool["function"]["name"],
+                        "description": validated_tool["function"].get("description", ""),
+                        "parameters": validated_tool["function"]["parameters"]
+                    }
+                })
+            except Exception as e:
+                logging.error(f"Invalid tool configuration: {str(e)}")
+                continue
+    return tools
+
+def create_vector_store(client, file_ids):
+    """Create a vector store and upload files"""
+    if not file_ids:
+        return None
+
+    try:
+        vector_store = client.beta.vector_stores.create(
+            name="Assistant Resource Files",
+            file_ids=file_ids
+        )
+        logging.info(f"Vector store created successfully, ID: {vector_store.id}")
+        return vector_store.id
+    except Exception as e:
+        logging.error(f"Failed to create vector store: {str(e)}")
+        return None
+
 def create_assistant(client, tool_data):
+    """Create or update assistant (compatible with v2 API)"""
+    tools = generate_tools_config(tool_data)
 
-  # If there is an assistant.json file, load the assistant
-  if os.path.exists(assistant_file_path):
-
-    with open(assistant_file_path, 'r') as file:
-      assistant_data = json.load(file)
-
-      assistant_id = assistant_data.get('assistant_id')
-
-      # If assistant_id is empty, create a new assistant instead of updating
-      if not assistant_id:
-          return create_new_assistant(client, tool_data)
-
-      # Generate current hash sums
-      current_tool_hashsum = core_functions.generate_hashsum('tools')
-      current_resource_hashsum = core_functions.generate_hashsum('resources')
-      current_assistant_hashsum = core_functions.generate_hashsum(
-          'assistant.py')
-
-      current_assistant_data = {
-          'tools_sum': core_functions.generate_hashsum('tools'),
-          'resources_sum': core_functions.generate_hashsum('resources'),
-          'assistant_sum': core_functions.generate_hashsum('assistant.py')
-      }
-
-      # Assuming assistant_data is loaded from a JSON file
-      if compare_assistant_data_hashes(current_assistant_data, assistant_data):
-
-        print("Assistant is up-to-date. Loaded existing assistant ID.")
-
-        return assistant_id
-      else:
-        print("Changes detected. Updating assistant...")
-
-        # Find and validate all given files
-        file_ids = core_functions.get_resource_file_ids(client)
-
+    if os.path.exists(assistant_file_path):
         try:
-          # Update the assistant
-          # Update assistant properties
-          assistant = client.beta.assistants.update(
-              assistant_id=assistant_id,
-              name=assistant_name,
-              instructions=get_assistant_instructions(),
-              model="gpt-4o-mini",
-              tools=[{
-                  "type": "file_search"
-              }] + tool_data["tool_configs"])
+            with open(assistant_file_path, 'r') as file:
+                assistant_data = json.load(file)
+                assistant_id = assistant_data.get('assistant_id')
 
-          # Update file attachments if there are any
-          if file_ids:
-              assistant = client.beta.assistants.update(
-                  assistant_id=assistant_id,
-                  file_ids=file_ids,
-                  instructions=get_assistant_instructions(),
-                  name=assistant_name,
-                  model="gpt-4o-mini",
-                  tools=[{"type": "file_search"}] + tool_data["tool_configs"])
+                if not assistant_id:
+                    logging.info("Invalid assistant ID detected, creating a new assistant...")
+                    return create_new_assistant(client, tool_data, tools)
 
-          # Build the JSON
-          assistant_data = {
-              'assistant_id': assistant.id,
-              'tools_sum': current_tool_hashsum,
-              'resources_sum': current_resource_hashsum,
-              'assistant_sum': current_assistant_hashsum,
-          }
+                current_hashes = {
+                    'tools_sum': core_functions.generate_hashsum('tools'),
+                    'resources_sum': core_functions.generate_hashsum('resources'),
+                    'assistant_sum': core_functions.generate_hashsum('assistant.py')
+                }
 
-          save_assistant_data(assistant_data, assistant_file_path)
-
-          print(f"Assistant (ID: {assistant_id}) updated successfully.")
+                if compare_assistant_data_hashes(current_hashes, assistant_data):
+                    logging.info("Assistant is up to date, using existing ID")
+                    return assistant_id
+                else:
+                    return update_existing_assistant(client, assistant_id, tools)
 
         except Exception as e:
-          print(f"Error updating assistant: {e}")
-  else:
-    # Create a new assistant
+            logging.error(f"Failed to load assistant data: {str(e)}")
+            return create_new_assistant(client, tool_data, tools)
+    else:
+        return create_new_assistant(client, tool_data, tools)
 
-    # Find and validate all given files
-    file_ids = core_functions.get_resource_file_ids(client)
+def update_existing_assistant(client, assistant_id, tools):
+    """Update an existing assistant"""
+    try:
+        logging.info("Configuration changes detected, updating assistant...")
+        file_ids = core_functions.get_resource_file_ids(client)
+        vector_store_id = create_vector_store(client, file_ids)
 
-    # Create the assistant
-    assistant = client.beta.assistants.create(
-        instructions=get_assistant_instructions(),
-        name=assistant_name,
-        model="gpt-4o-mini",
-        tools=[{
-            "type": "file_search"
-        }] + tool_data["tool_configs"])
-
-    if file_ids:
-        assistant = client.beta.assistants.update(
-            assistant_id=assistant.id,
-            tools=[{"type": "file_search"}] + tool_data["tool_configs"],
-            file_ids=file_ids,
-            instructions=get_assistant_instructions(),
+        updated_assistant = client.beta.assistants.update(
+            assistant_id=assistant_id,
             name=assistant_name,
-            model="gpt-4o-mini")
-
-    # Print the assistant ID or any other details you need
-    print(f"Assistant ID: {assistant.id}")
-
-    #Generate the hashsums for tools, resources, and the assistant.json file
-    tool_hashsum = core_functions.generate_hashsum('tools')
-    resource_hashsum = core_functions.generate_hashsum('resources')
-    assistant_hashsum = core_functions.generate_hashsum('assistant.py')
-
-    # Build the JSON
-    assistant_data = {
-        'assistant_id': assistant.id,
-        'tools_sum': tool_hashsum,
-        'resources_sum': resource_hashsum,
-        'assistant_sum': assistant_hashsum,
-    }
-
-    save_assistant_data(assistant_data, assistant_file_path)
-
-    print(f"Assistant has been created with ID: {assistant.id}")
-
-    assistant_id = assistant.id
-
-  return assistant_id
-
-
-# Save the assistant to a file
-def save_assistant_data(assistant_data, file_path):
-  """
-  Save assistant data into a JSON file.
-
-  :param assistant_data: Dictionary containing assistant's data.
-  :param file_path: Path where the JSON file will be saved.
-  """
-  try:
-    # Ensure the .storage directory exists
-    storage_dir = os.path.dirname(file_path)
-    os.makedirs(storage_dir, exist_ok=True)
-    logging.info(f"Storage directory ensured: {storage_dir}")
-
-    # Save the data
-    with open(file_path, 'w') as file:
-      json.dump(assistant_data, file, indent=2)
-      logging.info(f"Assistant data saved successfully to {file_path}")
-
-  except Exception as e:
-    logging.error(f"Error saving assistant data to {file_path}: {str(e)}")
-    raise FileNotFoundError(f"Failed to save assistant data: {str(e)}")
-
-
-# Checks if the Assistant JSON has all required fields
-def is_valid_assistant_data(assistant_data):
-  """
-  Check if the assistant data contains valid values for all required keys.
-
-  :param assistant_data: Dictionary containing assistant's data.
-  :return: Boolean indicating whether the data is valid.
-  """
-  required_keys = [
-      'assistant_id', 'tools_sum', 'resources_sum', 'assistant_sum'
-  ]
-  return all(key in assistant_data and assistant_data[key]
-             for key in required_keys)
-
-
-#Compares if all of the fields match with the current hashes
-def create_new_assistant(client, tool_data):
-    """Create a new assistant and return its ID"""
-    # Find and validate all given files
-    file_ids = core_functions.get_resource_file_ids(client)
-
-    # Create the assistant
-    assistant = client.beta.assistants.create(
-        instructions=get_assistant_instructions(),
-        name=assistant_name,
-        model="gpt-4o-mini",
-        tools=[{
-            "type": "file_search"
-        }] + tool_data["tool_configs"])
-
-    if file_ids:
-        assistant = client.beta.assistants.update(
-            assistant_id=assistant.id,
-            tools=[{"type": "file_search"}] + tool_data["tool_configs"],
-            file_ids=file_ids,
             instructions=get_assistant_instructions(),
+            model="gpt-4o-mini",
+            tools=tools,
+            tool_resources={
+                "file_search": {
+                    "vector_store_ids": [vector_store_id]
+                } if vector_store_id else None
+            }
+        )
+
+        save_assistant_data({
+            'assistant_id': updated_assistant.id,
+            'tools_sum': core_functions.generate_hashsum('tools'),
+            'resources_sum': core_functions.generate_hashsum('resources'),
+            'assistant_sum': core_functions.generate_hashsum('assistant.py')
+        }, assistant_file_path)
+
+        logging.info(f"Assistant updated successfully, ID: {updated_assistant.id}")
+        return updated_assistant.id
+
+    except Exception as e:
+        logging.error(f"Failed to update assistant: {str(e)}")
+        return create_new_assistant(client, tool_data, tools)
+
+def create_new_assistant(client, tool_data, tools):
+    """Create a new assistant"""
+    try:
+        file_ids = core_functions.get_resource_file_ids(client)
+        vector_store_id = create_vector_store(client, file_ids)
+
+        assistant = client.beta.assistants.create(
             name=assistant_name,
-            model="gpt-4o-mini")
+            instructions=get_assistant_instructions(),
+            model="gpt-4o-mini",
+            tools=tools,
+            tool_resources={
+                "file_search": {
+                    "vector_store_ids": [vector_store_id]
+                } if vector_store_id else None
+            }
+        )
 
-    # Generate the hashsums
-    tool_hashsum = core_functions.generate_hashsum('tools')
-    resource_hashsum = core_functions.generate_hashsum('resources')
-    assistant_hashsum = core_functions.generate_hashsum('assistant.py')
+        save_assistant_data({
+            'assistant_id': assistant.id,
+            'tools_sum': core_functions.generate_hashsum('tools'),
+            'resources_sum': core_functions.generate_hashsum('resources'),
+            'assistant_sum': core_functions.generate_hashsum('assistant.py')
+        }, assistant_file_path)
 
-    # Build and save the JSON
-    assistant_data = {
-        'assistant_id': assistant.id,
-        'tools_sum': tool_hashsum,
-        'resources_sum': resource_hashsum,
-        'assistant_sum': assistant_hashsum,
-    }
+        logging.info(f"New assistant created successfully, ID: {assistant.id}")
+        return assistant.id
 
-    save_assistant_data(assistant_data, assistant_file_path)
-    print(f"New assistant created with ID: {assistant.id}")
-    return assistant.id
+    except Exception as e:
+        logging.error(f"Failed to create assistant: {str(e)}")
+        raise
 
-def compare_assistant_data_hashes(current_data, saved_data):
-  """
-  Compare current assistant data with saved data.
+def save_assistant_data(data, path):
+    """Save assistant data to a file"""
+    try:
+        with open(path, 'w') as file:
+            json.dump(data, file, indent=2)
+        logging.info(f"Assistant data saved to {path}")
+    except Exception as e:
+        logging.error(f"Failed to save data: {str(e)}")
+        raise
 
-  :param current_data: Current assistant data.
-  :param saved_data: Saved assistant data from JSON file.
-  :return: Boolean indicating whether the data matches.
-  """
-  if not is_valid_assistant_data(saved_data):
-    return False
+def is_valid_assistant_data(data):
+    """Validate assistant data integrity"""
+    required_keys = ['assistant_id', 'tools_sum', 'resources_sum', 'assistant_sum']
+    return all(data.get(key) for key in required_keys)
 
-  return (current_data['tools_sum'] == saved_data['tools_sum']
-          and current_data['resources_sum'] == saved_data['resources_sum']
-          and current_data['assistant_sum'] == saved_data['assistant_sum'])
+def compare_assistant_data_hashes(current, saved):
+    """Compare hash values to determine if an update is needed"""
+    if not is_valid_assistant_data(saved):
+        return False
+    return all(current[key] == saved[key] for key in 
+               ['tools_sum', 'resources_sum', 'assistant_sum'])

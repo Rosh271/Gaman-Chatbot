@@ -16,3 +16,18 @@ deploymentTarget = "gce"
 [[ports]]
 localPort = 8080
 externalPort = 80
+
+[workflows]
+
+[[workflows.workflow]]
+name = "Test"
+mode = "sequential"
+author = 37530633
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m pytest"
+
+[auth]
+pageEnabled = true
+buttonEnabled = false
